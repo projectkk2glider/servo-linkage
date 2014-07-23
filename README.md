@@ -3,7 +3,7 @@ This program simulates a servo, push-rod and control surface mechanical system.
 
 Demo https://www.youtube.com/watch?v=dmfMiFj45kc
 
-![Example screeshot](https://github.com/projectkk2glider/servo-linkage/wiki/media/screenshot1.png)
+![Example screenshot](https://github.com/projectkk2glider/servo-linkage/wiki/media/screenshot1.png)
 
 ### Installation
  * install processing.org (http://processing.org/)
