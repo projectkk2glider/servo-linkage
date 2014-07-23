@@ -117,6 +117,7 @@ void setup() {
   size(windowWidth, windowHeight);
   originX = width/(6*diagramScale);
   originY = height/(2*diagramScale);
+  noLoop();
 }
 
 void keyPressed() {
@@ -129,8 +130,16 @@ void keyPressed() {
   if (key == 'c') {
     snapshots.clear();
   } 
+  redraw();
 }
 
+void mousePressed() {
+  redraw();
+}
+
+void mouseDragged() {
+  redraw();
+}
 class Snapshot {
   Point A, B, C, D, E;
   Snapshot(Point a, Point b, Point c, Point d, Point e) {
@@ -205,7 +214,13 @@ void displayAngle(float angle, Point at, float distance) {
   textSize(defaultTextSize/diagramScale);
   translate(at.x, at.y);
   rotate(angle);
-  text(nf(degrees(angle), 1,1)+"°", 3+distance, 1);
+  translate(3+distance, 0);
+  if ((degrees(angle) > 90) || (degrees(angle) < -90))  {
+    rotate(PI);
+    textAlign(RIGHT);
+  }
+  text(nf(degrees(angle), 1,1)+"°", 0, 0);
+  textAlign(LEFT);
   popMatrix();
 }
 
@@ -258,7 +273,7 @@ void drawDimension(float x1, float y1, float x2, float y2) {
   translate(distance/2, 0);
   textAlign(CENTER);
   textSize(defaultTextSize/diagramScale);
-  text(nf(distance, 1, 1), 0, -3);
+  text(nf(abs(distance), 1, 1), 0, -3);
   textAlign(LEFT);
   popMatrix();
 }
