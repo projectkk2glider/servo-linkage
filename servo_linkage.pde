@@ -16,6 +16,9 @@
 /*
   Changelog:
   
+  Version 1.2:
+    * Visual improvements
+  
   Version 1.1:
     * Improved graphics
     * Added dimensions
