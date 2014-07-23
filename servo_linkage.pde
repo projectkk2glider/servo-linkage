@@ -21,6 +21,7 @@
     * Added dimensions
     * Better display of horn angles
     * Code cleanup
+    * simpler startup setup
   
   Version 1.0:
     * first version
@@ -50,6 +51,20 @@
       Units are arbitrary, you can use floating numbers (ie 3.456) if needed.
 \* ------------------------------------------------------------------------------------------*/
 
+// default setup 2 (bottom hinged, bottom driven linkage)
+float distanceServoHingeX = 80;          //distance from servo pivot point to the surface pivot point in X axis
+float distanceServoHingeY = -10;         //distance from servo pivot point to the surface pivot point in Y axis
+float servoHornLen = 12;                 //length of servo horn
+float controlHornLen = 12;               //length of control horn
+float pushrodLen = 80.6;                   //length of push-rod
+float surfaceHornAngle = radians(-90);   //angle between control surface and control horn
+float surfaceLen = 49;                   //lenght of control surface
+float wingHeightAtServo = 22;            //wing height (distance in Y axis) at the servo pivot point
+float wingHeightAtHinge = 11;            //wing height (distance in Y axis) at the control surface hinge point
+boolean otherSolution = true;            //which solution to use when calculating surface position (start  value). 
+                                         //You can toogle this when runnitg with the press of 't' key. 
+
+
 //// example setup 1 (bottom hinged, bottom driven flap linkage)
 //float distanceServoHingeX = 85;
 //float distanceServoHingeY = -13;
@@ -62,18 +77,18 @@
 //float wingHeightAtHinge = 11;
 //boolean otherSolution = true;
 
-// example setup 2 (bottom hinged, top driven flap linkage)
-float distanceServoHingeX = 85;          //distance from servo pivot point to the surface pivot point in X axis
-float distanceServoHingeY = -13;         //distance from servo pivot point to the surface pivot point in Y axis
-float servoHornLen = 12;                 //length of servo horn
-float controlHornLen = 12;               //length of control horn
-float pushrodLen = 85;                   //length of push-rod
-float surfaceHornAngle = radians(135);   //angle between control surface and control horn
-float surfaceLen = 49;                   //lenght of control surface
-float wingHeightAtServo = 22;            //wing height (distance in Y axis) at the servo pivot point
-float wingHeightAtHinge = 11;            //wing height (distance in Y axis) at the control surface hinge point
-boolean otherSolution = false;           //which solution to use when calculating surface position (start  value). 
-                                         //You can toogle this when runnitg with the press of 't' key. 
+//// example setup 2 (bottom hinged, top driven flap linkage)
+//float distanceServoHingeX = 85;          //distance from servo pivot point to the surface pivot point in X axis
+//float distanceServoHingeY = -13;         //distance from servo pivot point to the surface pivot point in Y axis
+//float servoHornLen = 12;                 //length of servo horn
+//float controlHornLen = 12;               //length of control horn
+//float pushrodLen = 85;                   //length of push-rod
+//float surfaceHornAngle = radians(135);   //angle between control surface and control horn
+//float surfaceLen = 49;                   //lenght of control surface
+//float wingHeightAtServo = 22;            //wing height (distance in Y axis) at the servo pivot point
+//float wingHeightAtHinge = 11;            //wing height (distance in Y axis) at the control surface hinge point
+//boolean otherSolution = false;           //which solution to use when calculating surface position (start  value). 
+//                                         //You can toogle this when runnitg with the press of 't' key. 
 
 /*
     General settings
@@ -271,7 +286,7 @@ void drawStaticGraphics() {
   textSize(defaultTextSize/1.1);
   String msg = "servo horn len: "+nf(servoHornLen,1,1)+"\n";
   msg += "control horn len: "+nf(controlHornLen,1,1)+"\n";
-  msg += "push-rod len: "+nf(controlHornLen,1,1)+"\n";
+  msg += "push-rod len: "+nf(pushrodLen,1,1)+"\n";
   text(msg, 2, 2, legendWidth-4, legendHeight-4);
   popMatrix();
   
