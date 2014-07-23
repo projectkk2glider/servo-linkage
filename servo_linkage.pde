@@ -16,12 +16,16 @@
 /*
   Changelog:
   
+  Version 1.2:
+    * Visual improvements
+    * Enabled adjustment of dimensions in simulation view
+  
   Version 1.1:
     * Improved graphics
     * Added dimensions
     * Better display of horn angles
     * Code cleanup
-    * simpler startup setup
+    * simpler start-up setup
   
   Version 1.0:
     * first version
@@ -32,21 +36,26 @@
     
     USAGE
     
-      * configure dimensions
+      * configure starting dimensions
       * run simulation (Ctrl+R), inside simulation window:
         * use mouse to position servo horn (left mouse button down orients servo horn towards current mouse pointer)
         * use 's' key to make a snapshot of current position
-        * use 'c' key to clear all shapshots
-        * use 't' key to toogle linkage solution
+        * use 'c' key to clear all snapshots
+        * use 't' key to toggle linkage solution
+        * use keys form '1' to '4' to select which parameter to adjust. The selected parameter 
+          is displayed RED in legend
+        * use UP and DOWN arrow keys to adjust selected parameter in small steps
+        * use SHIFT+UP and SHIFT+DOWN arrow keys to adjust selected parameter in big steps
+        
       * exit simulation, adjust parameters and re-run simulation until desired configuration is achieved
     
     
     CONFIGURATION
     
-      Edit values to achive desired result
+      Edit values to achieve desired result.
       
       It is best to make a copy of a group of settings and edit them. Comment all other 
-      groups of settings. You can toogle comment with the Ctrl+/ key combination.
+      groups of settings. You can toggle comment with the Ctrl+/ key combination.
       
       Units are arbitrary, you can use floating numbers (ie 3.456) if needed.
 \* ------------------------------------------------------------------------------------------*/
@@ -112,23 +121,65 @@ float servoHornAngle = radians(90);
 float linkageOpacity;
 boolean makeSnapshot = false;
 ArrayList<Snapshot> snapshots = new ArrayList<Snapshot>();
+int changeMode = 0;
+boolean keyShiftPressed = false;
 
 void setup() {
   size(windowWidth, windowHeight);
   originX = width/(6*diagramScale);
   originY = height/(2*diagramScale);
+  noLoop();
 }
 
 void keyPressed() {
-  if (key == 't') {
-    otherSolution = !otherSolution;
-  } 
-  if (key == 's') {
-    makeSnapshot= true;
-  } 
-  if (key == 'c') {
-    snapshots.clear();
-  } 
+  if (key == CODED) {
+    if (keyCode == SHIFT) keyShiftPressed = true; 
+    if (keyCode == UP) {
+      incDecVar(changeMode, true, keyShiftPressed);
+    } 
+    if (keyCode == DOWN) {
+      incDecVar(changeMode, false, keyShiftPressed);
+    } 
+  }
+  else {
+    if (key == 't') {
+      otherSolution = !otherSolution;
+    } 
+    if (key == 's') {
+      makeSnapshot= true;
+    } 
+    if (key == 'c') {
+      snapshots.clear();
+    } 
+    if ((key >= '1') && (key <= '9')) {
+      int mode = key- '1' + 1;
+      if (mode == changeMode) changeMode = 0; //disable change
+      else changeMode = mode;
+    }
+  }
+  redraw();
+}
+
+void keyReleased() {
+  if (key == CODED) {
+    if (keyCode == SHIFT) keyShiftPressed = false; 
+  }
+}
+void mousePressed() {
+  redraw();
+}
+
+void mouseDragged() {
+  redraw();
+}
+
+void incDecVar(int varIndex, boolean up, boolean largeStep) {
+  float amount = largeStep ? 1.0 : 0.1;
+  if (!up) amount = -amount;
+  if (changeMode == 1)  servoHornLen += amount; 
+  if (changeMode == 2)  pushrodLen += amount; 
+  if (changeMode == 3)  controlHornLen += amount; 
+  if (changeMode == 4)  surfaceHornAngle += radians(amount); 
 }
 
 class Snapshot {
@@ -205,7 +256,13 @@ void displayAngle(float angle, Point at, float distance) {
   textSize(defaultTextSize/diagramScale);
   translate(at.x, at.y);
   rotate(angle);
-  text(nf(degrees(angle), 1,1)+"°", 3+distance, 1);
+  translate(3+distance, 0);
+  if ((degrees(angle) > 90) || (degrees(angle) < -90))  {
+    rotate(PI);
+    textAlign(RIGHT);
+  }
+  text(nf(degrees(angle), 1,1)+"°", 0, 0);
+  textAlign(LEFT);
   popMatrix();
 }
 
@@ -258,7 +315,7 @@ void drawDimension(float x1, float y1, float x2, float y2) {
   translate(distance/2, 0);
   textAlign(CENTER);
   textSize(defaultTextSize/diagramScale);
-  text(nf(distance, 1, 1), 0, -3);
+  text(nf(abs(distance), 1, 1), 0, -3);
   textAlign(LEFT);
   popMatrix();
 }
@@ -283,11 +340,29 @@ void drawStaticGraphics() {
   //noFill();
   stroke(#FFFFFF, 250);
   fill(255, 255);
-  textSize(defaultTextSize/1.1);
-  String msg = "servo horn len: "+nf(servoHornLen,1,1)+"\n";
-  msg += "control horn len: "+nf(controlHornLen,1,1)+"\n";
-  msg += "push-rod len: "+nf(pushrodLen,1,1)+"\n";
-  text(msg, 2, 2, legendWidth-4, legendHeight-4);
+  float fontSize = defaultTextSize/1.1;
+  textSize(fontSize);
+
+  translate(2, fontSize);
+  if (changeMode == 1) fill(#E00707, 250);
+  else fill(255, 255);
+  text("servo horn len: "+nf(servoHornLen,1,1), 0, 0); 
+
+  translate(0, fontSize);
+  if (changeMode == 2) fill(#E00707, 250);
+  else fill(255, 255);
+  text("push-rod len: "+nf(pushrodLen,1,1), 0, 0); 
+
+  translate(0, fontSize);
+  if (changeMode == 3) fill(#E00707, 250);
+  else fill(255, 255);
+  text("control horn len: "+nf(controlHornLen,1,1), 0, 0); 
+
+  translate(0, fontSize);
+  if (changeMode == 4) fill(#E00707, 250);
+  else fill(255, 255);
+  text("horn angle: "+nf(degrees(surfaceHornAngle),1,1), 0, 0); 
+  
   popMatrix();
   
   
