@@ -5,8 +5,9 @@ Demo https://www.youtube.com/watch?v=dmfMiFj45kc
 
 ![Example screeshot](https://github.com/projectkk2glider/servo-linkage/wiki/media/screenshot1.png)
 
-### Instalation
+### Installation
  * install processing.org (http://processing.org/)
- * Run processing.org and open this sketch.
- * Edit paramters, instructions are in the source code
+ * Download this project from https://github.com/projectkk2glider/servo-linkage/archive/master.zip and unzip it somewhere
+ * Run processing.org and open this sketch (where you unzipped it in previous step).
+ * Edit parameters, instructions are in the source code
  * Run sketch
