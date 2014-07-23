@@ -38,28 +38,30 @@
       Units are arbitrary, you can use floating numbers (ie 3.456) if needed.
 \* ------------------------------------------------------------------------------------------*/
 
-//// example setup 1 (bottom hinged, bottom driven flap linkage)
-//float distanceServoHingeX = 85;
-//float distanceServoHingeY = -13;
-//float servoHornLen = 11;
-//float controlHornLen = 14;
-//float pushrodLen = 88;
-//float surfaceHornAngle = radians(-45);
-//float surfaceLen = 49;
-//boolean otherSolution = true;
+// example setup 1 (bottom hinged, bottom driven flap linkage)
+float distanceServoHingeX = 85;
+float distanceServoHingeY = -13;
+float servoHornLen = 11;
+float controlHornLen = 14;
+float pushrodLen = 88;
+float surfaceHornAngle = radians(-45);
+float surfaceLen = 49;
+float wingHeightAtServo = 22;
+float wingHeightAtHinge = 11;
+boolean otherSolution = true;
 
-// example setup 2 (bottom hinged, top driven flap linkage)
-float distanceServoHingeX = 85;          //distance from servo pivot point to the surface pivot point in X axis
-float distanceServoHingeY = -13;         //distance from servo pivot point to the surface pivot point in Y axis
-float servoHornLen = 12;                 //length of servo horn
-float controlHornLen = 12;               //length of control horn
-float pushrodLen = 85;                   //length of push-rod
-float surfaceHornAngle = radians(135);   //angle between control surface and control horn
-float surfaceLen = 49;                   //lenght of control surface
-float wingHeightAtServo = 22;            //wing height (distance in Y axis) at the servo pivot point
-float wingHeightAtHinge = 11;            //wing height (distance in Y axis) at the control surface hinge point
-boolean otherSolution = false;           //which solution to use when calculating surface position (start  value). 
-                                         //You can toogle this when runnitg with the press of 't' key. 
+//// example setup 2 (bottom hinged, top driven flap linkage)
+//float distanceServoHingeX = 85;          //distance from servo pivot point to the surface pivot point in X axis
+//float distanceServoHingeY = -13;         //distance from servo pivot point to the surface pivot point in Y axis
+//float servoHornLen = 12;                 //length of servo horn
+//float controlHornLen = 12;               //length of control horn
+//float pushrodLen = 85;                   //length of push-rod
+//float surfaceHornAngle = radians(135);   //angle between control surface and control horn
+//float surfaceLen = 49;                   //lenght of control surface
+//float wingHeightAtServo = 22;            //wing height (distance in Y axis) at the servo pivot point
+//float wingHeightAtHinge = 11;            //wing height (distance in Y axis) at the control surface hinge point
+//boolean otherSolution = false;           //which solution to use when calculating surface position (start  value). 
+//                                         //You can toogle this when runnitg with the press of 't' key. 
 
 /*
     General settings
