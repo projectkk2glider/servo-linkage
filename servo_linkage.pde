@@ -1,7 +1,6 @@
 /*
 * Servo linkage simulation
 * Author: Damjan Adamic <projectkk2glider@gmail.com>
-* Version: 1.0 
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License version 2 as
@@ -15,6 +14,11 @@
 
 /*
   Changelog:
+  
+  Version 1.3:
+    * Better indication of which parameter is beeing changed
+    * Added save window contents to .png file with CTRL+p
+    * Add ability to save and restore settings from file
   
   Version 1.2:
     * Visual improvements
@@ -36,17 +40,19 @@
     
     USAGE
     
-      * configure starting dimensions
+      * configure starting dimensions if needed
       * run simulation (Ctrl+R), inside simulation window:
         * use mouse to position servo horn (left mouse button down orients servo horn towards current mouse pointer)
         * use 's' key to make a snapshot of current position
         * use 'c' key to clear all snapshots
         * use 't' key to toggle linkage solution
         * use keys form '1' to '4' to select which parameter to adjust. The selected parameter 
-          is displayed RED in legend
-        * use UP and DOWN arrow keys to adjust selected parameter in small steps
-        * use SHIFT+UP and SHIFT+DOWN arrow keys to adjust selected parameter in big steps
-        * use SHIFT+'P' to make a screenshot of window and save it to .png file in sketch folder
+          is displayed RED in legend and emphasized in the diagram
+        * use UP and DOWN arrow keys to adjust selected parameter in small steps. Use SHIFT+UP and 
+          SHIFT+DOWN arrow keys to adjust selected parameter in big steps
+        * use CTRL+p to make a screenshot of window and save it to .png file in sketch folder
+        * use CTRL+l key to load existing setup
+        * use CTRL+s key to save current setup to file 
         
       * exit simulation, adjust parameters and re-run simulation until desired configuration is achieved
     
@@ -116,6 +122,8 @@ float snapshotOpacity = 70;    //transparency of shapshot diagram
     DO NOT EDIT BELOW IF YOU DON'T KNOW WHAT YOU ARE DOING!
 \* ------------------------------------------------------------------------------------------*/
 
+import java.util.Properties;
+
 float originX;
 float originY;
 float servoHornAngle = radians(90);
@@ -124,6 +132,7 @@ boolean makeSnapshot = false;
 ArrayList<Snapshot> snapshots = new ArrayList<Snapshot>();
 int changeMode = 0;
 boolean keyShiftPressed = false;
+boolean keyControlPressed = false;
 SegmentStyle servoHornStyle, controlHornStyle, controlSurfaceStyle, pushrodStyle;
 
 void setup() {
@@ -133,9 +142,19 @@ void setup() {
   noLoop();
 }
 
+void incDecVar(int varIndex, boolean up, boolean largeStep) {
+  float amount = largeStep ? 1.0 : 0.1;
+  if (!up) amount = -amount;
+  if (changeMode == 1)  servoHornLen += amount; 
+  if (changeMode == 2)  pushrodLen += amount; 
+  if (changeMode == 3)  controlHornLen += amount; 
+  if (changeMode == 4)  surfaceHornAngle += radians(amount); 
+}
+
 void keyPressed() {
   if (key == CODED) {
     if (keyCode == SHIFT) keyShiftPressed = true; 
+    if (keyCode == CONTROL) keyControlPressed = true;
     if (keyCode == UP) incDecVar(changeMode, true, keyShiftPressed);
     if (keyCode == DOWN) incDecVar(changeMode, false, keyShiftPressed);
   }
@@ -148,8 +167,11 @@ void keyPressed() {
       if (mode == changeMode) changeMode = 0; //disable change
       else changeMode = mode;
     }
-    if (key == 'P') saveFrame("linkage-######.png");
-    if (key == 'L') selectInput("Load settings from file", "settingsLoad");
+    if ( keyControlPressed ) {
+      if (keyCode == 'P') { saveFrame("linkage-######.png"); println("screenshot saved."); }
+      if (keyCode == 'L') selectInput("Load setup from file", "settingsLoad");
+      if (keyCode == 'S') selectInput("Save setup to file", "settingsSave");
+    }
   }
   redraw();
 }
@@ -157,8 +179,10 @@ void keyPressed() {
 void keyReleased() {
   if (key == CODED) {
     if (keyCode == SHIFT) keyShiftPressed = false; 
+    if (keyCode == CONTROL) keyControlPressed = false; 
   }
 }
+
 void mousePressed() {
   redraw();
 }
@@ -167,7 +191,6 @@ void mouseDragged() {
   redraw();
 }
 
-import java.util.Properties;
 /**
  * simple convenience wrapper object for the standard
  * Properties class to return pre-typed numerals
@@ -186,38 +209,62 @@ class P5Properties extends Properties {
     return float(getProperty(id,""+defVal)); 
   }  
 }
-// This is callled when user selects a file
+
+// This is callled when user selects load settings from file
 void settingsLoad(File selection) {
-  if (selection == null) {
-    println("Window was closed or the user hit cancel.");
-    return;
-  } else {
-    println("User selected " + selection.getAbsolutePath());
-  }
+  if (selection == null) return;
   try {
     P5Properties props=new P5Properties();
     InputStream in = createInput(selection.getAbsolutePath());
     if (in == null) {
-      println("cant open");
+      println("can't open " + selection.getAbsolutePath());
       return;
     }
     props.load(in);
-    int w=props.getIntProperty("env.viewport.width",640);
-    println("w= "+nf(w,1,0));
+    int w=props.getIntProperty("distanceServoHingeX",640);
+    distanceServoHingeX = props.getFloatProperty("distanceServoHingeX",80); 
+    distanceServoHingeY = props.getFloatProperty("distanceServoHingeY",-10); 
+    servoHornLen = props.getFloatProperty("servoHornLen",12); 
+    controlHornLen = props.getFloatProperty("controlHornLen",12); 
+    pushrodLen = props.getFloatProperty("pushrodLen",80.6); 
+    surfaceHornAngle = props.getFloatProperty("surfaceHornAngle",-90); 
+    surfaceLen = props.getFloatProperty("surfaceLen",50); 
+    wingHeightAtServo = props.getFloatProperty("wingHeightAtServo",22); 
+    wingHeightAtHinge = props.getFloatProperty("wingHeightAtHinge",11); 
+    servoHornAngle = radians(90);
+    println("Settings loaded from " + selection.getAbsolutePath());
   }
   catch(IOException e) {
-    println("couldn't read config file...");
+    println("couldn't load settigns from file " + selection.getAbsolutePath());
+    e.printStackTrace();
   }
-  
+  redraw();
 }
 
-void incDecVar(int varIndex, boolean up, boolean largeStep) {
-  float amount = largeStep ? 1.0 : 0.1;
-  if (!up) amount = -amount;
-  if (changeMode == 1)  servoHornLen += amount; 
-  if (changeMode == 2)  pushrodLen += amount; 
-  if (changeMode == 3)  controlHornLen += amount; 
-  if (changeMode == 4)  surfaceHornAngle += radians(amount); 
+// This is callled when user selects save settings to file
+void settingsSave(File selection) {
+  if (selection == null) return;
+  try {
+    ArrayList<String> config = new ArrayList<String>();
+    config.add("#servo_linkage configuration file");
+    config.add("distanceServoHingeX = "+distanceServoHingeX);
+    config.add("distanceServoHingeY = "+distanceServoHingeY);
+    config.add("servoHornLen = "+servoHornLen);
+    config.add("controlHornLen = "+controlHornLen);
+    config.add("pushrodLen = "+pushrodLen);
+    config.add("surfaceHornAngle = "+surfaceHornAngle);
+    config.add("surfaceLen = "+surfaceLen);
+    config.add("wingHeightAtServo = "+wingHeightAtServo);
+    config.add("wingHeightAtHinge = "+wingHeightAtHinge);
+    String[] data = new String[config.size()];
+    config.toArray(data);
+    saveStrings(selection.getAbsolutePath(), data);
+    println("Settings saved to file " + selection.getAbsolutePath());
+  }
+  catch(Exception e) {
+    println("couldn't save settings to file " + selection.getAbsolutePath());
+    e.printStackTrace();
+  }
 }
 
 class Snapshot {
