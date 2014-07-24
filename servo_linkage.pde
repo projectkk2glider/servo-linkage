@@ -148,7 +148,8 @@ void keyPressed() {
       if (mode == changeMode) changeMode = 0; //disable change
       else changeMode = mode;
     }
-    if ((keyCode == 'P') && (keyShiftPressed)) saveFrame("linkage-######.png");
+    if (key == 'P') saveFrame("linkage-######.png");
+    if (key == 'L') selectInput("Load settings from file", "settingsLoad");
   }
   redraw();
 }
@@ -164,6 +165,50 @@ void mousePressed() {
 
 void mouseDragged() {
   redraw();
+}
+
+import java.util.Properties;
+/**
+ * simple convenience wrapper object for the standard
+ * Properties class to return pre-typed numerals
+ */
+class P5Properties extends Properties {
+ 
+  boolean getBooleanProperty(String id, boolean defState) {
+    return boolean(getProperty(id,""+defState));
+  }
+ 
+  int getIntProperty(String id, int defVal) {
+    return int(getProperty(id,""+defVal)); 
+  }
+ 
+  float getFloatProperty(String id, float defVal) {
+    return float(getProperty(id,""+defVal)); 
+  }  
+}
+// This is callled when user selects a file
+void settingsLoad(File selection) {
+  if (selection == null) {
+    println("Window was closed or the user hit cancel.");
+    return;
+  } else {
+    println("User selected " + selection.getAbsolutePath());
+  }
+  try {
+    P5Properties props=new P5Properties();
+    InputStream in = createInput(selection.getAbsolutePath());
+    if (in == null) {
+      println("cant open");
+      return;
+    }
+    props.load(in);
+    int w=props.getIntProperty("env.viewport.width",640);
+    println("w= "+nf(w,1,0));
+  }
+  catch(IOException e) {
+    println("couldn't read config file...");
+  }
+  
 }
 
 void incDecVar(int varIndex, boolean up, boolean largeStep) {
