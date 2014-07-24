@@ -134,6 +134,8 @@ int changeMode = 0;
 boolean keyShiftPressed = false;
 boolean keyControlPressed = false;
 SegmentStyle servoHornStyle, controlHornStyle, controlSurfaceStyle, pushrodStyle;
+String userMessage = "";
+int userMessageEndTime = 0;
 
 void setup() {
   size(windowWidth, windowHeight);
@@ -168,7 +170,10 @@ void keyPressed() {
       else changeMode = mode;
     }
     if ( keyControlPressed ) {
-      if (keyCode == 'P') { saveFrame("linkage-######.png"); println("screenshot saved."); }
+      if (keyCode == 'P') { 
+        saveFrame("linkage-######.png"); println("screenshot saved.");
+        setUserMessage("Screenshot saved", 1000); 
+      }
       if (keyCode == 'L') selectInput("Load setup from file", "settingsLoad");
       if (keyCode == 'S') selectInput("Save setup to file", "settingsSave");
     }
@@ -189,6 +194,12 @@ void mousePressed() {
 
 void mouseDragged() {
   redraw();
+}
+
+void setUserMessage(String message, int duration) {
+  userMessage = message;
+  userMessageEndTime = millis() + duration;
+  loop();
 }
 
 /**
@@ -218,6 +229,7 @@ void settingsLoad(File selection) {
     InputStream in = createInput(selection.getAbsolutePath());
     if (in == null) {
       println("can't open " + selection.getAbsolutePath());
+      setUserMessage("Error opening file " + selection.getAbsolutePath(), 2000);
       return;
     }
     props.load(in);
@@ -233,10 +245,12 @@ void settingsLoad(File selection) {
     wingHeightAtHinge = props.getFloatProperty("wingHeightAtHinge",11); 
     servoHornAngle = radians(90);
     println("Settings loaded from " + selection.getAbsolutePath());
+    setUserMessage("Settings loaded from " + selection.getAbsolutePath(), 1000);
   }
   catch(IOException e) {
-    println("couldn't load settigns from file " + selection.getAbsolutePath());
+    println("Error load settigns from file " + selection.getAbsolutePath());
     e.printStackTrace();
+    setUserMessage("Error load settigns from file " + selection.getAbsolutePath(), 2000);
   }
   redraw();
 }
@@ -260,10 +274,12 @@ void settingsSave(File selection) {
     config.toArray(data);
     saveStrings(selection.getAbsolutePath(), data);
     println("Settings saved to file " + selection.getAbsolutePath());
+    setUserMessage("Settings saved to file " + selection.getAbsolutePath(), 1000);
   }
   catch(Exception e) {
     println("couldn't save settings to file " + selection.getAbsolutePath());
     e.printStackTrace();
+    setUserMessage("Error saving settings to file " + selection.getAbsolutePath(), 2000);
   }
 }
 
@@ -358,10 +374,12 @@ void displayAngle(float angle, Point at, float distance) {
   translate(3+distance, 0);
   if ((degrees(angle) > 90) || (degrees(angle) < -90))  {
     rotate(PI);
-    textAlign(RIGHT);
+    textAlign(RIGHT, CENTER);
   }
-  text(nf(degrees(angle), 1,1)+"°", 0, 0);
-  textAlign(LEFT);
+  else {
+    textAlign(LEFT, CENTER);
+  }
+  text(nf(degrees(angle), 1,1)+"°", 0, -1);
   popMatrix();
 }
 
@@ -404,7 +422,8 @@ void drawAxis(float x, float y, String label, float angle) {
   line(0, 0, len, 0);
   line(len-arrowlen, -arrowlen, len, 0);
   line(len-arrowlen,  arrowlen, len, 0);
-  text(label, len, 4);
+  textAlign(LEFT);
+  text(label, len + 4, 4);
   popMatrix();
 }
 
@@ -451,6 +470,7 @@ void drawStaticGraphics() {
   float legendWidth = 200;
   float legendHeight = 80;
   pushMatrix();
+  textAlign(LEFT);
   translate(width - legendWidth - 10, 10 );
   stroke(#FFFFFF, 150);
   fill(255, 20);
@@ -502,6 +522,27 @@ void drawStaticGraphics() {
   drawDimension(originX, originY/2, originX + distanceServoHingeX, originY/2);
   drawDimension(originX/2, originY, originX/2, originY + distanceServoHingeY);
   popMatrix();
+  
+  //draw use message
+  if (userMessage.length() > 0) {
+    if (millis() > userMessageEndTime) {
+      userMessage = "";
+    }
+    pushMatrix();
+    translate(width/2, height/4);
+    textSize(defaultTextSize);
+    textAlign(CENTER, CENTER);
+    rectMode(CENTER);
+    noStroke();
+    fill(255, 200);
+    float msgWidth = width/2;
+    float msgHeight = height/4;
+    rect(0,0, msgWidth, msgHeight);
+    fill(0, 255);
+    text(userMessage, 0, 0, msgWidth, msgHeight);
+    rectMode(CORNER);
+    popMatrix();  
+  }
 }
 
 
