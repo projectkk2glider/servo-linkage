@@ -1,7 +1,6 @@
 /*
 * Servo linkage simulation
 * Author: Damjan Adamic <projectkk2glider@gmail.com>
-* Version: 1.0 
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License version 2 as
@@ -15,6 +14,11 @@
 
 /*
   Changelog:
+  
+  Version 1.3:
+    * Better indication of which parameter is being changed
+    * Added save window contents to .png file with CTRL+p
+    * Add ability to save and restore settings from file
   
   Version 1.2:
     * Visual improvements
@@ -36,16 +40,19 @@
     
     USAGE
     
-      * configure starting dimensions
+      * configure starting dimensions if needed
       * run simulation (Ctrl+R), inside simulation window:
         * use mouse to position servo horn (left mouse button down orients servo horn towards current mouse pointer)
         * use 's' key to make a snapshot of current position
         * use 'c' key to clear all snapshots
         * use 't' key to toggle linkage solution
         * use keys form '1' to '4' to select which parameter to adjust. The selected parameter 
-          is displayed RED in legend
-        * use UP and DOWN arrow keys to adjust selected parameter in small steps
-        * use SHIFT+UP and SHIFT+DOWN arrow keys to adjust selected parameter in big steps
+          is displayed RED in legend and emphasized in the diagram
+        * use UP and DOWN arrow keys to adjust selected parameter in small steps. Use SHIFT+UP and 
+          SHIFT+DOWN arrow keys to adjust selected parameter in big steps
+        * use CTRL+p to make a screenshot of window and save it to .png file in sketch folder
+        * use CTRL+l key to load existing setup
+        * use CTRL+s key to save current setup to file 
         
       * exit simulation, adjust parameters and re-run simulation until desired configuration is achieved
     
@@ -115,6 +122,8 @@ float snapshotOpacity = 70;    //transparency of shapshot diagram
     DO NOT EDIT BELOW IF YOU DON'T KNOW WHAT YOU ARE DOING!
 \* ------------------------------------------------------------------------------------------*/
 
+import java.util.Properties;
+
 float originX;
 float originY;
 float servoHornAngle = radians(90);
@@ -123,54 +132,17 @@ boolean makeSnapshot = false;
 ArrayList<Snapshot> snapshots = new ArrayList<Snapshot>();
 int changeMode = 0;
 boolean keyShiftPressed = false;
+boolean keyControlPressed = false;
+SegmentStyle servoHornStyle, controlHornStyle, controlSurfaceStyle, pushrodStyle;
+String userMessage = "";
+int userMessageEndTime = 0;
 
 void setup() {
   size(windowWidth, windowHeight);
   originX = width/(6*diagramScale);
   originY = height/(2*diagramScale);
   noLoop();
-}
-
-void keyPressed() {
-  if (key == CODED) {
-    if (keyCode == SHIFT) keyShiftPressed = true; 
-    if (keyCode == UP) {
-      incDecVar(changeMode, true, keyShiftPressed);
-    } 
-    if (keyCode == DOWN) {
-      incDecVar(changeMode, false, keyShiftPressed);
-    } 
-  }
-  else {
-    if (key == 't') {
-      otherSolution = !otherSolution;
-    } 
-    if (key == 's') {
-      makeSnapshot= true;
-    } 
-    if (key == 'c') {
-      snapshots.clear();
-    } 
-    if ((key >= '1') && (key <= '9')) {
-      int mode = key- '1' + 1;
-      if (mode == changeMode) changeMode = 0; //disable change
-      else changeMode = mode;
-    }
-  }
-  redraw();
-}
-
-void keyReleased() {
-  if (key == CODED) {
-    if (keyCode == SHIFT) keyShiftPressed = false; 
-  }
-}
-void mousePressed() {
-  redraw();
-}
-
-void mouseDragged() {
-  redraw();
+  setUserMessage("Test user message", 1000);
 }
 
 void incDecVar(int varIndex, boolean up, boolean largeStep) {
@@ -180,6 +152,136 @@ void incDecVar(int varIndex, boolean up, boolean largeStep) {
   if (changeMode == 2)  pushrodLen += amount; 
   if (changeMode == 3)  controlHornLen += amount; 
   if (changeMode == 4)  surfaceHornAngle += radians(amount); 
+}
+
+void keyPressed() {
+  if (key == CODED) {
+    if (keyCode == SHIFT) keyShiftPressed = true; 
+    if (keyCode == CONTROL) keyControlPressed = true;
+    if (keyCode == UP) incDecVar(changeMode, true, keyShiftPressed);
+    if (keyCode == DOWN) incDecVar(changeMode, false, keyShiftPressed);
+  }
+  else {
+    if (key == 't') otherSolution = !otherSolution;
+    if (key == 's') makeSnapshot= true;
+    if (key == 'c') snapshots.clear();
+    if ((key >= '1') && (key <= '9')) {
+      int mode = key- '1' + 1;
+      if (mode == changeMode) changeMode = 0; //disable change
+      else changeMode = mode;
+    }
+    if ( keyControlPressed ) {
+      if (keyCode == 'P') { 
+        saveFrame("linkage-######.png"); println("screenshot saved.");
+        setUserMessage("Screenshot saved", 1000); 
+      }
+      if (keyCode == 'L') { selectInput("Load setup from file", "settingsLoad"); keyControlPressed = false; }
+      if (keyCode == 'S') { selectInput("Save setup to file", "settingsSave"); keyControlPressed = false; }
+    }
+  }
+  redraw();
+}
+
+void keyReleased() {
+  if (key == CODED) {
+    if (keyCode == SHIFT) keyShiftPressed = false; 
+    if (keyCode == CONTROL) keyControlPressed = false; 
+  }
+}
+
+void mousePressed() {
+  redraw();
+}
+
+void mouseDragged() {
+  redraw();
+}
+
+void setUserMessage(String message, int duration) {
+  userMessage = message;
+  userMessageEndTime = millis() + duration;
+  loop();
+}
+
+/**
+ * simple convenience wrapper object for the standard
+ * Properties class to return pre-typed numerals
+ */
+class P5Properties extends Properties {
+ 
+  boolean getBooleanProperty(String id, boolean defState) {
+    return boolean(getProperty(id,""+defState));
+  }
+ 
+  int getIntProperty(String id, int defVal) {
+    return int(getProperty(id,""+defVal)); 
+  }
+ 
+  float getFloatProperty(String id, float defVal) {
+    return float(getProperty(id,""+defVal)); 
+  }  
+}
+
+// This is callled when user selects load settings from file
+void settingsLoad(File selection) {
+  if (selection == null) return;
+  try {
+    P5Properties props=new P5Properties();
+    InputStream in = createInput(selection.getAbsolutePath());
+    if (in == null) {
+      println("can't open " + selection.getAbsolutePath());
+      setUserMessage("Error opening file " + selection.getAbsolutePath(), 2000);
+      return;
+    }
+    props.load(in);
+    int w=props.getIntProperty("distanceServoHingeX",640);
+    distanceServoHingeX = props.getFloatProperty("distanceServoHingeX",80); 
+    distanceServoHingeY = props.getFloatProperty("distanceServoHingeY",-10); 
+    servoHornLen = props.getFloatProperty("servoHornLen",12); 
+    controlHornLen = props.getFloatProperty("controlHornLen",12); 
+    pushrodLen = props.getFloatProperty("pushrodLen",80.6); 
+    surfaceHornAngle = props.getFloatProperty("surfaceHornAngle",-90); 
+    surfaceLen = props.getFloatProperty("surfaceLen",50); 
+    wingHeightAtServo = props.getFloatProperty("wingHeightAtServo",22); 
+    wingHeightAtHinge = props.getFloatProperty("wingHeightAtHinge",11); 
+    servoHornAngle = radians(90);
+    println("Settings loaded from " + selection.getAbsolutePath());
+    setUserMessage("Settings loaded from " + selection.getAbsolutePath(), 1000);
+  }
+  catch(IOException e) {
+    println("Error load settigns from file " + selection.getAbsolutePath());
+    e.printStackTrace();
+    setUserMessage("Error load settigns from file " + selection.getAbsolutePath(), 2000);
+  }
+  redraw();
+}
+
+// This is callled when user selects save settings to file
+void settingsSave(File selection) {
+  if (selection == null) return;
+  try {
+    ArrayList<String> config = new ArrayList<String>();
+    config.add("#servo_linkage configuration file");
+    config.add("distanceServoHingeX = "+distanceServoHingeX);
+    config.add("distanceServoHingeY = "+distanceServoHingeY);
+    config.add("servoHornLen = "+servoHornLen);
+    config.add("controlHornLen = "+controlHornLen);
+    config.add("pushrodLen = "+pushrodLen);
+    config.add("surfaceHornAngle = "+surfaceHornAngle);
+    config.add("surfaceLen = "+surfaceLen);
+    config.add("wingHeightAtServo = "+wingHeightAtServo);
+    config.add("wingHeightAtHinge = "+wingHeightAtHinge);
+    String[] data = new String[config.size()];
+    config.toArray(data);
+    saveStrings(selection.getAbsolutePath(), data);
+    println("Settings saved to file " + selection.getAbsolutePath());
+    setUserMessage("Settings saved to file " + selection.getAbsolutePath(), 1000);
+  }
+  catch(Exception e) {
+    println("couldn't save settings to file " + selection.getAbsolutePath());
+    e.printStackTrace();
+    setUserMessage("Error saving settings to file " + selection.getAbsolutePath(), 2000);
+  }
 }
 
 class Snapshot {
@@ -240,14 +342,28 @@ class Point {
   }
 }
 
-void drawSegment(Point start, Point end, color colr, float weight, boolean endPoint) {
-  stroke(colr, linkageOpacity);
+class SegmentStyle {
+  color clr;
+  float weight;
+  float opacity;
+  boolean startPivot;
+  boolean endPivot;
+  SegmentStyle(color _color, float _weight, float _opacity, boolean sp, boolean ep) {
+    clr = _color;
+    weight = _weight;
+    opacity = _opacity;
+    startPivot = sp;
+    endPivot = ep;
+  }
+}
+
+void drawSegment(Point start, Point end, SegmentStyle style) {
+  stroke(style.clr, style.opacity);
   strokeWeight(1);
-  ellipse(start.x, start.y, 2, 2);
-  strokeWeight(weight);
+  if (style.startPivot) ellipse(start.x, start.y, 2, 2);
+  if (style.endPivot) ellipse(end.x, end.y, 2, 2);
+  strokeWeight(style.weight);
   line(start.x, start.y, end.x, end.y);
-  strokeWeight(1);
-  if (endPoint) ellipse(end.x, end.y, 2, 2);
 }
 
 
@@ -259,28 +375,44 @@ void displayAngle(float angle, Point at, float distance) {
   translate(3+distance, 0);
   if ((degrees(angle) > 90) || (degrees(angle) < -90))  {
     rotate(PI);
-    textAlign(RIGHT);
+    textAlign(RIGHT, CENTER);
   }
-  text(nf(degrees(angle), 1,1)+"°", 0, 0);
-  textAlign(LEFT);
+  else {
+    textAlign(LEFT, CENTER);
+  }
+  text(nf(degrees(angle), 1,1)+"°", 0, -1);
   popMatrix();
 }
 
+void setLinkageStyles(int activeItem, float opacity) {
+  //default style
+  servoHornStyle = new SegmentStyle(#00ff40,  5, opacity, true, true);
+  controlHornStyle = new SegmentStyle(#00ff40,  5, opacity, true, true);
+  controlSurfaceStyle = new SegmentStyle(#D04040,  2, opacity, true, false);
+  pushrodStyle = new SegmentStyle(#F00060,  2, opacity, true, true);
+  //sed different opacity for active segment
+  if (activeItem == 1) servoHornStyle.opacity = 255;
+  if (activeItem == 2) pushrodStyle.opacity = 255;
+  if (activeItem == 3) controlHornStyle.opacity = 255;
+  if (activeItem == 4) controlSurfaceStyle.opacity = 255;
+}
+
 void drawLinkages(Snapshot curr, boolean canCalculate, String errorMsg) { 
-  drawSegment(curr.A, curr.B, #00ff40, 5, true);      //servo horn
+  drawSegment(curr.A, curr.B, servoHornStyle);      //servo horn
   if ( canCalculate ) {
-    drawSegment(curr.C, curr.D, #00ff40, 5, true);    //control horn
-    drawSegment(curr.D, curr.E, #D04040, 2, false);   //control surface
-    drawSegment(curr.B, curr.C, #F00060, 2, true);    //push rod
-    displayAngle(curr.D.angle(curr.E), curr.E, 0);
+    drawSegment(curr.C, curr.D, controlHornStyle);    //control horn
+    drawSegment(curr.D, curr.E, controlSurfaceStyle);   //control surface
+    drawSegment(curr.B, curr.C, pushrodStyle);    //push rod
+    displayAngle(curr.D.angle(curr.E), curr.E, 0);  //control surface angle
   }
   else {
     textSize(defaultTextSize*2/diagramScale);
     text(errorMsg, originX, originY);
   }
-  displayAngle(curr.A.angle(curr.B), curr.B, 10);
+  displayAngle(curr.A.angle(curr.B), curr.B, 10);  //servo horn angle
 }
 
+// Draws coordinate system axis legend
 void drawAxis(float x, float y, String label, float angle) {
   pushMatrix();
   translate(x,y);
@@ -291,10 +423,12 @@ void drawAxis(float x, float y, String label, float angle) {
   line(0, 0, len, 0);
   line(len-arrowlen, -arrowlen, len, 0);
   line(len-arrowlen,  arrowlen, len, 0);
-  text(label, len, 4);
+  textAlign(LEFT);
+  text(label, len + 4, 4);
   popMatrix();
 }
 
+// Draws a dimension
 void drawDimension(float x1, float y1, float x2, float y2) {
   Point A = new Point(x1, y1);
   Point B = new Point(x2, y2);
@@ -302,16 +436,20 @@ void drawDimension(float x1, float y1, float x2, float y2) {
   pushMatrix();
   translate(A.x, A.y);
   rotate(A.angle(B));
-  line(0, 0, distance, 0);
+  //line
+  line(0, 0, distance, 0); 
   pushMatrix();
   int arrowLen = 2;
+  //arrow
   line(0,0, arrowLen, arrowLen);
   line(0,0, arrowLen, -arrowLen);
   translate(distance, 0);
   rotate(PI);
+  //other arrow
   line(0,0, arrowLen, arrowLen);
   line(0,0, arrowLen, -arrowLen);
   popMatrix();
+  //text - distance
   translate(distance/2, 0);
   textAlign(CENTER);
   textSize(defaultTextSize/diagramScale);
@@ -333,6 +471,7 @@ void drawStaticGraphics() {
   float legendWidth = 200;
   float legendHeight = 80;
   pushMatrix();
+  textAlign(LEFT);
   translate(width - legendWidth - 10, 10 );
   stroke(#FFFFFF, 150);
   fill(255, 20);
@@ -342,34 +481,28 @@ void drawStaticGraphics() {
   fill(255, 255);
   float fontSize = defaultTextSize/1.1;
   textSize(fontSize);
-
   translate(2, fontSize);
   if (changeMode == 1) fill(#E00707, 250);
   else fill(255, 255);
-  text("servo horn len: "+nf(servoHornLen,1,1), 0, 0); 
-
+  text("1: servo horn len: "+nf(servoHornLen,1,1), 0, 0); 
   translate(0, fontSize);
   if (changeMode == 2) fill(#E00707, 250);
   else fill(255, 255);
-  text("push-rod len: "+nf(pushrodLen,1,1), 0, 0); 
-
+  text("2: push-rod len: "+nf(pushrodLen,1,1), 0, 0); 
   translate(0, fontSize);
   if (changeMode == 3) fill(#E00707, 250);
   else fill(255, 255);
-  text("control horn len: "+nf(controlHornLen,1,1), 0, 0); 
-
+  text("3: control horn len: "+nf(controlHornLen,1,1), 0, 0); 
   translate(0, fontSize);
   if (changeMode == 4) fill(#E00707, 250);
   else fill(255, 255);
-  text("horn angle: "+nf(degrees(surfaceHornAngle),1,1), 0, 0); 
-  
+  text("4: control horn angle: "+nf(degrees(surfaceHornAngle),1,1), 0, 0); 
   popMatrix();
-  
-  
-  //change scale to diagramScale
-  scale(diagramScale);
-
+ 
+ 
   //draw grid
+  pushMatrix(); 
+  scale(diagramScale);
   stroke(#ff3080, 150);
   //fill(#FFFFFF, 255);
   strokeWeight(1.0/diagramScale);
@@ -389,9 +522,34 @@ void drawStaticGraphics() {
   fill(#FFFFFF, 155);
   drawDimension(originX, originY/2, originX + distanceServoHingeX, originY/2);
   drawDimension(originX/2, originY, originX/2, originY + distanceServoHingeY);
+  popMatrix();
   
-  //we end with scale(diagramScale);
+  //draw use message
+  if (userMessage.length() > 0) {
+    if (millis() > userMessageEndTime) {
+      userMessage = "";
+      noLoop();
+      redraw();
+    }
+    else {
+      pushMatrix();
+      translate(width/2, height/4);
+      textSize(defaultTextSize);
+      textAlign(CENTER, CENTER);
+      rectMode(CENTER);
+      noStroke();
+      fill(255, 200);
+      float msgWidth = width/2;
+      float msgHeight = height/4;
+      rect(0,0, msgWidth, msgHeight);
+      fill(0, 255);
+      text(userMessage, 0, 0, msgWidth, msgHeight);
+      rectMode(CORNER);
+      popMatrix();
+    }
+  }
 }
+
 
 void draw() {
   background(0);
@@ -449,6 +607,7 @@ void draw() {
   drawStaticGraphics();  //leaves scale set to diagramScale;
 
   //draw wing outline
+  scale(diagramScale);
   strokeWeight(2.0/diagramScale);
   stroke(#FF8000, 160);
   fill(#FFFFFF, 255);
@@ -457,13 +616,13 @@ void draw() {
   line(D.x, D.y-wingHeightAtHinge, originX, originY - wingHeightAtServo);
 
   //draw snapshots
-  linkageOpacity = snapshotOpacity;
+  setLinkageStyles(-1, snapshotOpacity);
   for (int i = 0; i < snapshots.size(); i++) {
     drawLinkages(snapshots.get(i), true, "");  
   }
   
   //draw current state
-  linkageOpacity = defaultOpacity;
+  setLinkageStyles(changeMode, defaultOpacity);
   drawLinkages(curr, canCalculate, errorMsg); 
 }
 
