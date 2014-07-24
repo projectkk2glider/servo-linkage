@@ -16,7 +16,7 @@
   Changelog:
   
   Version 1.3:
-    * Better indication of which parameter is beeing changed
+    * Better indication of which parameter is being changed
     * Added save window contents to .png file with CTRL+p
     * Add ability to save and restore settings from file
   
@@ -142,6 +142,7 @@ void setup() {
   originX = width/(6*diagramScale);
   originY = height/(2*diagramScale);
   noLoop();
+  setUserMessage("Test user message", 1000);
 }
 
 void incDecVar(int varIndex, boolean up, boolean largeStep) {
@@ -174,8 +175,8 @@ void keyPressed() {
         saveFrame("linkage-######.png"); println("screenshot saved.");
         setUserMessage("Screenshot saved", 1000); 
       }
-      if (keyCode == 'L') selectInput("Load setup from file", "settingsLoad");
-      if (keyCode == 'S') selectInput("Save setup to file", "settingsSave");
+      if (keyCode == 'L') { selectInput("Load setup from file", "settingsLoad"); keyControlPressed = false; }
+      if (keyCode == 'S') { selectInput("Save setup to file", "settingsSave"); keyControlPressed = false; }
     }
   }
   redraw();
@@ -527,21 +528,25 @@ void drawStaticGraphics() {
   if (userMessage.length() > 0) {
     if (millis() > userMessageEndTime) {
       userMessage = "";
+      noLoop();
+      redraw();
     }
-    pushMatrix();
-    translate(width/2, height/4);
-    textSize(defaultTextSize);
-    textAlign(CENTER, CENTER);
-    rectMode(CENTER);
-    noStroke();
-    fill(255, 200);
-    float msgWidth = width/2;
-    float msgHeight = height/4;
-    rect(0,0, msgWidth, msgHeight);
-    fill(0, 255);
-    text(userMessage, 0, 0, msgWidth, msgHeight);
-    rectMode(CORNER);
-    popMatrix();  
+    else {
+      pushMatrix();
+      translate(width/2, height/4);
+      textSize(defaultTextSize);
+      textAlign(CENTER, CENTER);
+      rectMode(CENTER);
+      noStroke();
+      fill(255, 200);
+      float msgWidth = width/2;
+      float msgHeight = height/4;
+      rect(0,0, msgWidth, msgHeight);
+      fill(0, 255);
+      text(userMessage, 0, 0, msgWidth, msgHeight);
+      rectMode(CORNER);
+      popMatrix();
+    }
   }
 }
 
