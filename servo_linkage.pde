@@ -123,6 +123,7 @@ boolean makeSnapshot = false;
 ArrayList<Snapshot> snapshots = new ArrayList<Snapshot>();
 int changeMode = 0;
 boolean keyShiftPressed = false;
+SegmentStyle servoHornStyle, controlHornStyle, controlSurfaceStyle, pushrodStyle;
 
 void setup() {
   size(windowWidth, windowHeight);
@@ -240,14 +241,28 @@ class Point {
   }
 }
 
-void drawSegment(Point start, Point end, color colr, float weight, boolean endPoint) {
-  stroke(colr, linkageOpacity);
+class SegmentStyle {
+  color clr;
+  float weight;
+  float opacity;
+  boolean startPivot;
+  boolean endPivot;
+  SegmentStyle(color _color, float _weight, float _opacity, boolean sp, boolean ep) {
+    clr = _color;
+    weight = _weight;
+    opacity = _opacity;
+    startPivot = sp;
+    endPivot = ep;
+  }
+}
+
+void drawSegment(Point start, Point end, SegmentStyle style) {
+  stroke(style.clr, style.opacity);
   strokeWeight(1);
-  ellipse(start.x, start.y, 2, 2);
-  strokeWeight(weight);
+  if (style.startPivot) ellipse(start.x, start.y, 2, 2);
+  if (style.endPivot) ellipse(end.x, end.y, 2, 2);
+  strokeWeight(style.weight);
   line(start.x, start.y, end.x, end.y);
-  strokeWeight(1);
-  if (endPoint) ellipse(end.x, end.y, 2, 2);
 }
 
 
@@ -266,21 +281,35 @@ void displayAngle(float angle, Point at, float distance) {
   popMatrix();
 }
 
+void setLinkageStyles(int activeItem, float opacity) {
+  //default style
+  servoHornStyle = new SegmentStyle(#00ff40,  5, opacity, true, true);
+  controlHornStyle = new SegmentStyle(#00ff40,  5, opacity, true, true);
+  controlSurfaceStyle = new SegmentStyle(#D04040,  2, opacity, true, false);
+  pushrodStyle = new SegmentStyle(#F00060,  2, opacity, true, true);
+  //sed different opacity for active segment
+  if (activeItem == 1) servoHornStyle.opacity = 255;
+  if (activeItem == 2) pushrodStyle.opacity = 255;
+  if (activeItem == 3) controlHornStyle.opacity = 255;
+  if (activeItem == 4) controlSurfaceStyle.opacity = 255;
+}
+
 void drawLinkages(Snapshot curr, boolean canCalculate, String errorMsg) { 
-  drawSegment(curr.A, curr.B, #00ff40, 5, true);      //servo horn
+  drawSegment(curr.A, curr.B, servoHornStyle);      //servo horn
   if ( canCalculate ) {
-    drawSegment(curr.C, curr.D, #00ff40, 5, true);    //control horn
-    drawSegment(curr.D, curr.E, #D04040, 2, false);   //control surface
-    drawSegment(curr.B, curr.C, #F00060, 2, true);    //push rod
-    displayAngle(curr.D.angle(curr.E), curr.E, 0);
+    drawSegment(curr.C, curr.D, controlHornStyle);    //control horn
+    drawSegment(curr.D, curr.E, controlSurfaceStyle);   //control surface
+    drawSegment(curr.B, curr.C, pushrodStyle);    //push rod
+    displayAngle(curr.D.angle(curr.E), curr.E, 0);  //control surface angle
   }
   else {
     textSize(defaultTextSize*2/diagramScale);
     text(errorMsg, originX, originY);
   }
-  displayAngle(curr.A.angle(curr.B), curr.B, 10);
+  displayAngle(curr.A.angle(curr.B), curr.B, 10);  //servo horn angle
 }
 
+// Draws coordinate system axis legend
 void drawAxis(float x, float y, String label, float angle) {
   pushMatrix();
   translate(x,y);
@@ -295,6 +324,7 @@ void drawAxis(float x, float y, String label, float angle) {
   popMatrix();
 }
 
+// Draws a dimension
 void drawDimension(float x1, float y1, float x2, float y2) {
   Point A = new Point(x1, y1);
   Point B = new Point(x2, y2);
@@ -302,16 +332,20 @@ void drawDimension(float x1, float y1, float x2, float y2) {
   pushMatrix();
   translate(A.x, A.y);
   rotate(A.angle(B));
-  line(0, 0, distance, 0);
+  //line
+  line(0, 0, distance, 0); 
   pushMatrix();
   int arrowLen = 2;
+  //arrow
   line(0,0, arrowLen, arrowLen);
   line(0,0, arrowLen, -arrowLen);
   translate(distance, 0);
   rotate(PI);
+  //other arrow
   line(0,0, arrowLen, arrowLen);
   line(0,0, arrowLen, -arrowLen);
   popMatrix();
+  //text - distance
   translate(distance/2, 0);
   textAlign(CENTER);
   textSize(defaultTextSize/diagramScale);
@@ -342,34 +376,28 @@ void drawStaticGraphics() {
   fill(255, 255);
   float fontSize = defaultTextSize/1.1;
   textSize(fontSize);
-
   translate(2, fontSize);
   if (changeMode == 1) fill(#E00707, 250);
   else fill(255, 255);
-  text("servo horn len: "+nf(servoHornLen,1,1), 0, 0); 
-
+  text("1: servo horn len: "+nf(servoHornLen,1,1), 0, 0); 
   translate(0, fontSize);
   if (changeMode == 2) fill(#E00707, 250);
   else fill(255, 255);
-  text("push-rod len: "+nf(pushrodLen,1,1), 0, 0); 
-
+  text("2: push-rod len: "+nf(pushrodLen,1,1), 0, 0); 
   translate(0, fontSize);
   if (changeMode == 3) fill(#E00707, 250);
   else fill(255, 255);
-  text("control horn len: "+nf(controlHornLen,1,1), 0, 0); 
-
+  text("3: control horn len: "+nf(controlHornLen,1,1), 0, 0); 
   translate(0, fontSize);
   if (changeMode == 4) fill(#E00707, 250);
   else fill(255, 255);
-  text("horn angle: "+nf(degrees(surfaceHornAngle),1,1), 0, 0); 
-  
+  text("4: control horn angle: "+nf(degrees(surfaceHornAngle),1,1), 0, 0); 
   popMatrix();
-  
-  
-  //change scale to diagramScale
-  scale(diagramScale);
-
+ 
+ 
   //draw grid
+  pushMatrix(); 
+  scale(diagramScale);
   stroke(#ff3080, 150);
   //fill(#FFFFFF, 255);
   strokeWeight(1.0/diagramScale);
@@ -389,9 +417,9 @@ void drawStaticGraphics() {
   fill(#FFFFFF, 155);
   drawDimension(originX, originY/2, originX + distanceServoHingeX, originY/2);
   drawDimension(originX/2, originY, originX/2, originY + distanceServoHingeY);
-  
-  //we end with scale(diagramScale);
+  popMatrix();
 }
+
 
 void draw() {
   background(0);
@@ -449,6 +477,7 @@ void draw() {
   drawStaticGraphics();  //leaves scale set to diagramScale;
 
   //draw wing outline
+  scale(diagramScale);
   strokeWeight(2.0/diagramScale);
   stroke(#FF8000, 160);
   fill(#FFFFFF, 255);
@@ -457,13 +486,13 @@ void draw() {
   line(D.x, D.y-wingHeightAtHinge, originX, originY - wingHeightAtServo);
 
   //draw snapshots
-  linkageOpacity = snapshotOpacity;
+  setLinkageStyles(-1, snapshotOpacity);
   for (int i = 0; i < snapshots.size(); i++) {
     drawLinkages(snapshots.get(i), true, "");  
   }
   
   //draw current state
-  linkageOpacity = defaultOpacity;
+  setLinkageStyles(changeMode, defaultOpacity);
   drawLinkages(curr, canCalculate, errorMsg); 
 }
 
