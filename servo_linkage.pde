@@ -46,6 +46,7 @@
           is displayed RED in legend
         * use UP and DOWN arrow keys to adjust selected parameter in small steps
         * use SHIFT+UP and SHIFT+DOWN arrow keys to adjust selected parameter in big steps
+        * use SHIFT+'P' to make a screenshot of window and save it to .png file in sketch folder
         
       * exit simulation, adjust parameters and re-run simulation until desired configuration is achieved
     
@@ -135,28 +136,19 @@ void setup() {
 void keyPressed() {
   if (key == CODED) {
     if (keyCode == SHIFT) keyShiftPressed = true; 
-    if (keyCode == UP) {
-      incDecVar(changeMode, true, keyShiftPressed);
-    } 
-    if (keyCode == DOWN) {
-      incDecVar(changeMode, false, keyShiftPressed);
-    } 
+    if (keyCode == UP) incDecVar(changeMode, true, keyShiftPressed);
+    if (keyCode == DOWN) incDecVar(changeMode, false, keyShiftPressed);
   }
   else {
-    if (key == 't') {
-      otherSolution = !otherSolution;
-    } 
-    if (key == 's') {
-      makeSnapshot= true;
-    } 
-    if (key == 'c') {
-      snapshots.clear();
-    } 
+    if (key == 't') otherSolution = !otherSolution;
+    if (key == 's') makeSnapshot= true;
+    if (key == 'c') snapshots.clear();
     if ((key >= '1') && (key <= '9')) {
       int mode = key- '1' + 1;
       if (mode == changeMode) changeMode = 0; //disable change
       else changeMode = mode;
     }
+    if ((keyCode == 'P') && (keyShiftPressed)) saveFrame("linkage-######.png");
   }
   redraw();
 }
