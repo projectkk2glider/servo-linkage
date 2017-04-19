@@ -14,111 +14,155 @@
 
 /*
   Changelog:
-  
+
+  Version 1.4:
+    * Added vertical marker
+    * Added top hinged control surface simulation
+
   Version 1.3:
     * Better indication of which parameter is being changed
     * Added save window contents to .png file with CTRL+p
     * Add ability to save and restore settings from file
-  
+
   Version 1.2:
     * Visual improvements
     * Enabled adjustment of dimensions in simulation view
-  
+
   Version 1.1:
     * Improved graphics
     * Added dimensions
     * Better display of horn angles
     * Code cleanup
     * simpler start-up setup
-  
+
   Version 1.0:
     * first version
 */
 
 /* ------------------------------------------------------------------------------------------*\
     START OF CONFIGURATION SECTION
-    
+
     USAGE
-    
+
       * configure starting dimensions if needed
-      * run simulation (Ctrl+R), inside simulation window:
+      * run simulation (CTRL+R), inside simulation window:
         * use mouse to position servo horn (left mouse button down orients servo horn towards current mouse pointer)
         * use 's' key to make a snapshot of current position
         * use 'c' key to clear all snapshots
         * use 't' key to toggle linkage solution
-        * use keys form '1' to '4' to select which parameter to adjust. The selected parameter 
+        * use keys form '1' to '5' to select which parameter to adjust. The selected parameter
           is displayed RED in legend and emphasized in the diagram
-        * use UP and DOWN arrow keys to adjust selected parameter in small steps. Use SHIFT+UP and 
+        * use UP and DOWN arrow keys to adjust selected parameter in small steps. Use SHIFT+UP and
           SHIFT+DOWN arrow keys to adjust selected parameter in big steps
-        * use CTRL+p to make a screenshot of window and save it to .png file in sketch folder
+        * use CTRL+p to make a screenshot of window and save it to .PNG file in sketch folder
         * use CTRL+l key to load existing setup
-        * use CTRL+s key to save current setup to file 
-        
+        * use CTRL+s key to save current setup to file
+
       * exit simulation, adjust parameters and re-run simulation until desired configuration is achieved
-    
-    
+
+
     CONFIGURATION
-    
+
       Edit values to achieve desired result.
-      
-      It is best to make a copy of a group of settings and edit them. Comment all other 
-      groups of settings. You can toggle comment with the Ctrl+/ key combination.
-      
+
+      It is best to make a copy of a group of settings and edit them. Comment all other
+      groups of settings. You can toggle comment with the CTRL+/ key combination.
+
       Units are arbitrary, you can use floating numbers (ie 3.456) if needed.
 \* ------------------------------------------------------------------------------------------*/
 
-// default setup 2 (bottom hinged, bottom driven linkage)
+/* ------------------------------------------------------------------------------------------*\
+  default setup 2 (bottom hinged, bottom driven linkage)
+\* ------------------------------------------------------------------------------------------*/
 float distanceServoHingeX = 80;          //distance from servo pivot point to the surface pivot point in X axis
 float distanceServoHingeY = -10;         //distance from servo pivot point to the surface pivot point in Y axis
 float servoHornLen = 12;                 //length of servo horn
 float controlHornLen = 12;               //length of control horn
 float pushrodLen = 80.6;                   //length of push-rod
 float surfaceHornAngle = radians(-90);   //angle between control surface and control horn
-float surfaceLen = 49;                   //lenght of control surface
+float surfaceLen = 49;                   //length of control surface
 float wingHeightAtServo = 22;            //wing height (distance in Y axis) at the servo pivot point
 float wingHeightAtHinge = 11;            //wing height (distance in Y axis) at the control surface hinge point
-boolean otherSolution = true;            //which solution to use when calculating surface position (start  value). 
-                                         //You can toogle this when runnitg with the press of 't' key. 
+boolean otherSolution = true;            //which solution to use when calculating surface position (start  value).
+                                         //You can toggle this when running with the press of 't' key.
+float verticalMarkerLocation = 10;       // A optional vertical marker that can be used to measure something
+                                         // (for example the location of the pushrod exit hole)
+                                         // set to zero to hide it
+int hingePosition = 0;                   // Hinge position: 0 bottom, 1 top
 
 
-//// example setup 1 (bottom hinged, bottom driven flap linkage)
-//float distanceServoHingeX = 85;
-//float distanceServoHingeY = -13;
-//float servoHornLen = 11;
-//float controlHornLen = 14;
-//float pushrodLen = 88;
-//float surfaceHornAngle = radians(-45);
-//float surfaceLen = 49;
-//float wingHeightAtServo = 22;
-//float wingHeightAtHinge = 11;
-//boolean otherSolution = true;
+/* ------------------------------------------------------------------------------------------*\
+   example setup 1 (bottom hinged, bottom driven flap linkage)
+\* ------------------------------------------------------------------------------------------*/
+// float distanceServoHingeX = 85;
+// float distanceServoHingeY = -13;
+// float servoHornLen = 11;
+// float controlHornLen = 14;
+// float pushrodLen = 88;
+// float surfaceHornAngle = radians(-45);
+// float surfaceLen = 49;
+// float wingHeightAtServo = 22;
+// float wingHeightAtHinge = 11;
+// boolean otherSolution = true;
+// float verticalMarkerLocation = 10;       // A optional vertical marker that can be used to measure something
+//                                          // (for example the location of the pushrod exit hole)
+//                                          // set to zero to hide it
+// int hingePosition = 0;                   // Hinge position: 0 bottom, 1 top
 
-//// example setup 2 (bottom hinged, top driven flap linkage)
-//float distanceServoHingeX = 85;          //distance from servo pivot point to the surface pivot point in X axis
-//float distanceServoHingeY = -13;         //distance from servo pivot point to the surface pivot point in Y axis
-//float servoHornLen = 12;                 //length of servo horn
-//float controlHornLen = 12;               //length of control horn
-//float pushrodLen = 85;                   //length of push-rod
-//float surfaceHornAngle = radians(135);   //angle between control surface and control horn
-//float surfaceLen = 49;                   //lenght of control surface
-//float wingHeightAtServo = 22;            //wing height (distance in Y axis) at the servo pivot point
-//float wingHeightAtHinge = 11;            //wing height (distance in Y axis) at the control surface hinge point
-//boolean otherSolution = false;           //which solution to use when calculating surface position (start  value). 
-//                                         //You can toogle this when runnitg with the press of 't' key. 
 
-/*
+/* ------------------------------------------------------------------------------------------*\
+   example setup 2 (bottom hinged, top driven flap linkage)
+\* ------------------------------------------------------------------------------------------*/
+// float distanceServoHingeX = 85;          //distance from servo pivot point to the surface pivot point in X axis
+// float distanceServoHingeY = -13;         //distance from servo pivot point to the surface pivot point in Y axis
+// float servoHornLen = 12;                 //length of servo horn
+// float controlHornLen = 12;               //length of control horn
+// float pushrodLen = 85;                   //length of push-rod
+// float surfaceHornAngle = radians(135);   //angle between control surface and control horn
+// float surfaceLen = 49;                   //length of control surface
+// float wingHeightAtServo = 22;            //wing height (distance in Y axis) at the servo pivot point
+// float wingHeightAtHinge = 11;            //wing height (distance in Y axis) at the control surface hinge point
+// boolean otherSolution = false;           //which solution to use when calculating surface position (start  value).
+//                                         //You can toggle this when running with the press of 't' key.
+// float verticalMarkerLocation = 10;       // A optional vertical marker that can be used to measure something
+//                                          // (for example the location of the pushrod exit hole)
+//                                          // set to zero to hide it
+// int hingePosition = 0;                   // Hinge position: 0 bottom, 1 top
+
+
+/* ------------------------------------------------------------------------------------------*\
+   default setup 3 (top hinged, bottom driven linkage)
+\* ------------------------------------------------------------------------------------------*/
+// float distanceServoHingeX = 80;          //distance from servo pivot point to the surface pivot point in X axis
+// float distanceServoHingeY = -10;         //distance from servo pivot point to the surface pivot point in Y axis
+// float servoHornLen = 12;                 //length of servo horn
+// float controlHornLen = 24;               //length of control horn
+// float pushrodLen = 81;                   //length of push-rod
+// float surfaceHornAngle = radians(-90);   //angle between control surface and control horn
+// float surfaceLen = 49;                   //length of control surface
+// float wingHeightAtServo = 22;            //wing height (distance in Y axis) at the servo pivot point
+// float wingHeightAtHinge = 11;            //wing height (distance in Y axis) at the control surface hinge point
+// boolean otherSolution = true;            //which solution to use when calculating surface position (start  value).
+//                                          //You can toggle this when running with the press of 't' key.
+// float verticalMarkerLocation = 0 ;       // A optional vertical marker that can be used to measure something
+//                                          // (for example the location of the pushrod exit hole)
+//                                          // set to zero to hide it
+// int hingePosition = 1;                   // Hinge position: 0 bottom, 1 top
+
+
+/* ------------------------------------------------------------------------------------------*\
     General settings
-*/
+\* ------------------------------------------------------------------------------------------*/
 float diagramScale = 4.3;      //drawing scale (all measurements above are multiplied with this number to covert them to pixels)
-float defaultTextSize = 14;    //preferred test size 
+float defaultTextSize = 14;    //preferred test size
 int windowHeight = 600;        //simulation window height (pixels)
 int windowWidth = 800;         //simulation window width (pixels)
 float defaultOpacity = 150;    //transparency of linkage diagram 0-255 (bigger number -> more opaque, less transparent)
-float snapshotOpacity = 70;    //transparency of shapshot diagram 
+float snapshotOpacity = 70;    //transparency of shapshot diagram
 
 /* ------------------------------------------------------------------------------------------*\
     END OF CONFIGURATION SECTION
-    
+
     DO NOT EDIT BELOW IF YOU DON'T KNOW WHAT YOU ARE DOING!
 \* ------------------------------------------------------------------------------------------*/
 
@@ -142,21 +186,22 @@ void setup() {
   originX = width/(6*diagramScale);
   originY = height/(2*diagramScale);
   noLoop();
-  setUserMessage("Test user message", 1000);
+  //setUserMessage("Test user message", 1000);
 }
 
 void incDecVar(int varIndex, boolean up, boolean largeStep) {
   float amount = largeStep ? 1.0 : 0.1;
   if (!up) amount = -amount;
-  if (changeMode == 1)  servoHornLen += amount; 
-  if (changeMode == 2)  pushrodLen += amount; 
-  if (changeMode == 3)  controlHornLen += amount; 
-  if (changeMode == 4)  surfaceHornAngle += radians(amount); 
+  if (changeMode == 1)  servoHornLen += amount;
+  if (changeMode == 2)  pushrodLen += amount;
+  if (changeMode == 3)  controlHornLen += amount;
+  if (changeMode == 4)  surfaceHornAngle += radians(amount);
+  if (changeMode == 5)  verticalMarkerLocation += amount;
 }
 
 void keyPressed() {
   if (key == CODED) {
-    if (keyCode == SHIFT) keyShiftPressed = true; 
+    if (keyCode == SHIFT) keyShiftPressed = true;
     if (keyCode == CONTROL) keyControlPressed = true;
     if (keyCode == UP) incDecVar(changeMode, true, keyShiftPressed);
     if (keyCode == DOWN) incDecVar(changeMode, false, keyShiftPressed);
@@ -171,9 +216,9 @@ void keyPressed() {
       else changeMode = mode;
     }
     if ( keyControlPressed ) {
-      if (keyCode == 'P') { 
+      if (keyCode == 'P') {
         saveFrame("linkage-######.png"); println("screenshot saved.");
-        setUserMessage("Screenshot saved", 1000); 
+        setUserMessage("Screenshot saved", 1000);
       }
       if (keyCode == 'L') { selectInput("Load setup from file", "settingsLoad"); keyControlPressed = false; }
       if (keyCode == 'S') { selectInput("Save setup to file", "settingsSave"); keyControlPressed = false; }
@@ -184,8 +229,8 @@ void keyPressed() {
 
 void keyReleased() {
   if (key == CODED) {
-    if (keyCode == SHIFT) keyShiftPressed = false; 
-    if (keyCode == CONTROL) keyControlPressed = false; 
+    if (keyCode == SHIFT) keyShiftPressed = false;
+    if (keyCode == CONTROL) keyControlPressed = false;
   }
 }
 
@@ -208,21 +253,21 @@ void setUserMessage(String message, int duration) {
  * Properties class to return pre-typed numerals
  */
 class P5Properties extends Properties {
- 
+
   boolean getBooleanProperty(String id, boolean defState) {
     return boolean(getProperty(id,""+defState));
   }
- 
+
   int getIntProperty(String id, int defVal) {
-    return int(getProperty(id,""+defVal)); 
+    return int(getProperty(id,""+defVal));
   }
- 
+
   float getFloatProperty(String id, float defVal) {
-    return float(getProperty(id,""+defVal)); 
-  }  
+    return float(getProperty(id,""+defVal));
+  }
 }
 
-// This is callled when user selects load settings from file
+// This is called when user selects load settings from file
 void settingsLoad(File selection) {
   if (selection == null) return;
   try {
@@ -235,28 +280,28 @@ void settingsLoad(File selection) {
     }
     props.load(in);
     int w=props.getIntProperty("distanceServoHingeX",640);
-    distanceServoHingeX = props.getFloatProperty("distanceServoHingeX",80); 
-    distanceServoHingeY = props.getFloatProperty("distanceServoHingeY",-10); 
-    servoHornLen = props.getFloatProperty("servoHornLen",12); 
-    controlHornLen = props.getFloatProperty("controlHornLen",12); 
-    pushrodLen = props.getFloatProperty("pushrodLen",80.6); 
-    surfaceHornAngle = props.getFloatProperty("surfaceHornAngle",-90); 
-    surfaceLen = props.getFloatProperty("surfaceLen",50); 
-    wingHeightAtServo = props.getFloatProperty("wingHeightAtServo",22); 
-    wingHeightAtHinge = props.getFloatProperty("wingHeightAtHinge",11); 
+    distanceServoHingeX = props.getFloatProperty("distanceServoHingeX",80);
+    distanceServoHingeY = props.getFloatProperty("distanceServoHingeY",-10);
+    servoHornLen = props.getFloatProperty("servoHornLen",12);
+    controlHornLen = props.getFloatProperty("controlHornLen",12);
+    pushrodLen = props.getFloatProperty("pushrodLen",80.6);
+    surfaceHornAngle = props.getFloatProperty("surfaceHornAngle",-90);
+    surfaceLen = props.getFloatProperty("surfaceLen",50);
+    wingHeightAtServo = props.getFloatProperty("wingHeightAtServo",22);
+    wingHeightAtHinge = props.getFloatProperty("wingHeightAtHinge",11);
     servoHornAngle = radians(90);
     println("Settings loaded from " + selection.getAbsolutePath());
     setUserMessage("Settings loaded from " + selection.getAbsolutePath(), 1000);
   }
   catch(IOException e) {
-    println("Error load settigns from file " + selection.getAbsolutePath());
+    println("Error load settings from file " + selection.getAbsolutePath());
     e.printStackTrace();
-    setUserMessage("Error load settigns from file " + selection.getAbsolutePath(), 2000);
+    setUserMessage("Error load settings from file " + selection.getAbsolutePath(), 2000);
   }
   redraw();
 }
 
-// This is callled when user selects save settings to file
+// This is called when user selects save settings to file
 void settingsSave(File selection) {
   if (selection == null) return;
   try {
@@ -287,7 +332,7 @@ void settingsSave(File selection) {
 class Snapshot {
   Point A, B, C, D, E;
   Snapshot(Point a, Point b, Point c, Point d, Point e) {
-    A = a; 
+    A = a;
     B = b;
     C = c;
     D = d;
@@ -397,7 +442,7 @@ void setLinkageStyles(int activeItem, float opacity) {
   if (activeItem == 4) controlSurfaceStyle.opacity = 255;
 }
 
-void drawLinkages(Snapshot curr, boolean canCalculate, String errorMsg) { 
+void drawLinkages(Snapshot curr, boolean canCalculate, String errorMsg) {
   drawSegment(curr.A, curr.B, servoHornStyle);      //servo horn
   if ( canCalculate ) {
     drawSegment(curr.C, curr.D, controlHornStyle);    //control horn
@@ -437,7 +482,7 @@ void drawDimension(float x1, float y1, float x2, float y2) {
   translate(A.x, A.y);
   rotate(A.angle(B));
   //line
-  line(0, 0, distance, 0); 
+  line(0, 0, distance, 0);
   pushMatrix();
   int arrowLen = 2;
   //arrow
@@ -458,7 +503,7 @@ void drawDimension(float x1, float y1, float x2, float y2) {
   popMatrix();
 }
 
-void drawStaticGraphics() {
+void drawStaticGraphics(Snapshot curr) {
   //we start with scale(1)
 
   // draw axis legend
@@ -466,7 +511,7 @@ void drawStaticGraphics() {
   strokeWeight(1.0);
   drawAxis(10, 10, "x", 0);
   drawAxis(10, 10, "y", 90);
-  
+
   //draw legend
   float legendWidth = 200;
   float legendHeight = 80;
@@ -484,24 +529,28 @@ void drawStaticGraphics() {
   translate(2, fontSize);
   if (changeMode == 1) fill(#E00707, 250);
   else fill(255, 255);
-  text("1: servo horn len: "+nf(servoHornLen,1,1), 0, 0); 
+  text("1: servo horn len: "+nf(servoHornLen,1,1), 0, 0);
   translate(0, fontSize);
   if (changeMode == 2) fill(#E00707, 250);
   else fill(255, 255);
-  text("2: push-rod len: "+nf(pushrodLen,1,1), 0, 0); 
+  text("2: push-rod len: "+nf(pushrodLen,1,1), 0, 0);
   translate(0, fontSize);
   if (changeMode == 3) fill(#E00707, 250);
   else fill(255, 255);
-  text("3: control horn len: "+nf(controlHornLen,1,1), 0, 0); 
+  text("3: control horn len: "+nf(controlHornLen,1,1), 0, 0);
   translate(0, fontSize);
   if (changeMode == 4) fill(#E00707, 250);
   else fill(255, 255);
-  text("4: control horn angle: "+nf(degrees(surfaceHornAngle),1,1), 0, 0); 
+  text("4: control horn angle: "+nf(degrees(surfaceHornAngle),1,1), 0, 0);
+  translate(0, fontSize);
+  if (changeMode == 5) fill(#E00707, 250);
+  else fill(255, 255);
+  text("5: v. marker: "+nf(verticalMarkerLocation,1,1), 0, 0);
   popMatrix();
- 
- 
+
+
   //draw grid
-  pushMatrix(); 
+  pushMatrix();
   scale(diagramScale);
   stroke(#ff3080, 150);
   //fill(#FFFFFF, 255);
@@ -513,9 +562,15 @@ void drawStaticGraphics() {
   //draw surface arc, servo circle and control horn circle
   noFill();
   stroke(#ff3080, 70);
-  arc(originX+distanceServoHingeX, originY, surfaceLen*2, surfaceLen*2, radians(-90), radians(90));
-  ellipse(originX, originY + distanceServoHingeY, servoHornLen*2, servoHornLen*2 );
-  ellipse(originX+distanceServoHingeX, originY, controlHornLen*2, controlHornLen*2 );
+  arc(curr.D.x, curr.D.y, surfaceLen*2, surfaceLen*2, radians(-90), radians(90));
+  ellipse(curr.A.x, curr.A.y, servoHornLen*2, servoHornLen*2 );
+  ellipse(curr.D.x, curr.D.y, controlHornLen*2, controlHornLen*2 );
+
+  //draw vertical marker
+  if (verticalMarkerLocation != 0.0) {
+    float x = originX+distanceServoHingeX - verticalMarkerLocation;
+    line(x, 0, x , height);
+  }
 
   //draw dimensions
   stroke(#FFFFFF, 100);
@@ -523,7 +578,7 @@ void drawStaticGraphics() {
   drawDimension(originX, originY/2, originX + distanceServoHingeX, originY/2);
   drawDimension(originX/2, originY, originX/2, originY + distanceServoHingeY);
   popMatrix();
-  
+
   //draw use message
   if (userMessage.length() > 0) {
     if (millis() > userMessageEndTime) {
@@ -559,22 +614,28 @@ void draw() {
   String errorMsg =  "";
   Point C = new Point();
   Point E = new Point();
-  
+  Point D;
+
   // calc point A - servo horn pivot
   Point A = new Point(originX, originY + distanceServoHingeY);
-  
+
   //get servo angle from mouse position
   if (mousePressed == true) {
     float dx = mouseX - A.x * diagramScale;
     float dy = mouseY - A.y * diagramScale;
     servoHornAngle = atan2(dy, dx);
   }
-  
+
   // calc point B - servo horn end
   Point B = new Point(A, servoHornAngle, servoHornLen);
 
   // calc point D - control horn pivot
-  Point D = new Point(originX + distanceServoHingeX, originY);
+  if (hingePosition == 1) {
+    D = new Point(originX + distanceServoHingeX, originY - wingHeightAtHinge);
+  }
+  else {
+    D = new Point(originX + distanceServoHingeX, originY);
+  }
 
   // check if calculation possible
   if (B.distance(D) > (pushrodLen + controlHornLen)) {
@@ -588,42 +649,49 @@ void draw() {
   if ( canCalculate ) {
     // calc point C - control horn end
     C = new Point(B, D, pushrodLen, controlHornLen, otherSolution);
-  
+
     // calc point E - control surface end
     float surfaceAngle = D.angle(C) + surfaceHornAngle;
     E = new Point(D, surfaceAngle, surfaceLen);
   }
-  
+
   Snapshot curr = new Snapshot(A,B,C,D,E);
-  
+
   if (makeSnapshot) {
     makeSnapshot = false;
     if (canCalculate) {
       snapshots.add(curr);
     }
   }
-  
+
   //draw static graphics
-  drawStaticGraphics();  //leaves scale set to diagramScale;
+  drawStaticGraphics(curr);  //leaves scale set to diagramScale;
 
   //draw wing outline
   scale(diagramScale);
   strokeWeight(2.0/diagramScale);
   stroke(#FF8000, 160);
   fill(#FFFFFF, 255);
-  line(0, originY, D.x, D.y);
-  line(D.x, D.y, D.x, D.y-wingHeightAtHinge);
-  line(D.x, D.y-wingHeightAtHinge, originX, originY - wingHeightAtServo);
+  if (hingePosition == 1) {
+    line(0, originY, D.x, originY);
+    line(D.x, originY, D.x, D.y);
+    line(D.x, D.y, originX, originY - wingHeightAtServo);
+  }
+  else {
+    line(0, originY, D.x, D.y);
+    line(D.x, D.y, D.x, D.y-wingHeightAtHinge);
+    line(D.x, D.y-wingHeightAtHinge, originX, originY - wingHeightAtServo);
+  }
 
   //draw snapshots
   setLinkageStyles(-1, snapshotOpacity);
   for (int i = 0; i < snapshots.size(); i++) {
-    drawLinkages(snapshots.get(i), true, "");  
+    drawLinkages(snapshots.get(i), true, "");
   }
-  
+
   //draw current state
   setLinkageStyles(changeMode, defaultOpacity);
-  drawLinkages(curr, canCalculate, errorMsg); 
+  drawLinkages(curr, canCalculate, errorMsg);
 }
 
 
